@@ -31,6 +31,8 @@ Available Extensions:
   - [`canary_theme`](https://github.com/jcwillox/lovelace-canary/wiki/Generic-Card#canary_theme)
 - [Glance Card](https://github.com/jcwillox/lovelace-canary/wiki/Glance-Card)
   - [`align`](https://github.com/jcwillox/lovelace-canary/wiki/Glance-Card#align)
+- Horizontal Stack
+  - `in_card`
 - [Vertical Stack](https://github.com/jcwillox/lovelace-canary/wiki/Vertical-Stack)
   - [`in_card`](https://github.com/jcwillox/lovelace-canary/wiki/Vertical-Stack#in_card)
 - [Canary Card](https://github.com/jcwillox/lovelace-canary/wiki/Canary-Card)

@@ -7,7 +7,8 @@ import "./secondary-info";
 import "./modules/generic-entity-row";
 // adds the no_card option.
 import "./modules/generic-card";
-// adds the in_card option.
+// adds the in_card option to horizontal and vertical stacks.
+import "./modules/horizontal-stack";
 import "./modules/vertical-stack";
 // adds the align option.
 import "./modules/glance-card";

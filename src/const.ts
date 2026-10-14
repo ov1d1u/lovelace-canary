@@ -15,6 +15,13 @@ export const VERTICAL_STACK_IN_CARD_STYLE = `
     }
 `;
 
+// language=CSS
+export const HORIZONTAL_STACK_IN_CARD_STYLE = `
+    #root > *:not(:first-child) {
+      margin-inline-start: -24px;
+    }
+`;
+
 export const NO_CARD_STYLE = {
   boxShadow: "none",
   background: "none",
