@@ -1,5 +1,5 @@
 import { LovelaceCard } from "custom-card-helpers";
-import { COMPACT_STACK_IN_CARD_STYLE, NO_CARD_STYLE } from "../const";
+import { NORMAL_STACK_IN_CARD_STYLE, NO_CARD_STYLE } from "../const";
 import { createModule } from "../module";
 import { extensionEnabled, moduleEnabled } from "../utils";
 
@@ -11,7 +11,7 @@ interface CardWithStyles extends LovelaceCard, CustomElementConstructor {
 
 interface Config {
   in_card?: boolean;
-  in_card_spacing?: "theme" | "compact";
+  in_card_spacing?: "normal" | "theme" | "compact";
 }
 
 const applyStyles = async function (element) {
@@ -46,6 +46,7 @@ export function registerStackInCard(
   module: string,
   element: string,
   stackStyle: string,
+  compactStyle: string,
 ) {
   if (!moduleEnabled(module)) return;
 
@@ -60,13 +61,15 @@ export function registerStackInCard(
         this._config?.in_card === true &&
         extensionEnabled(this._config, "in_card")
       ) {
-        // add ha-card appearance, preserving theme spacing unless compact is requested.
+        // add ha-card appearance with normal, theme, or legacy compact spacing.
         const styleElement = document.createElement("style");
         styleElement.textContent =
           inCardStyle +
           (this._config.in_card_spacing === "compact"
-            ? COMPACT_STACK_IN_CARD_STYLE
-            : "");
+            ? compactStyle
+            : this._config.in_card_spacing === "theme"
+              ? ""
+              : NORMAL_STACK_IN_CARD_STYLE);
         this.shadowRoot?.appendChild(styleElement);
 
         // remove style from all ha-card child elements.

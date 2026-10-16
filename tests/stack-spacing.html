@@ -110,10 +110,15 @@
     for (const axis of ["vertical", "horizontal"]) {
       const prefix = axis + ": ";
       const standard = make(axis, { in_card: true });
+      const normal = make(
+        axis,
+        { in_card: true, in_card_spacing: "normal" },
+        { "--stack-card-gap": "24px" },
+      );
       const compact = make(
         axis,
         { in_card: true, in_card_spacing: "compact" },
-        { "--stack-card-gap": "24px" },
+        { "--stack-card-gap": "13px" },
       );
       const explicit = make(
         axis,
@@ -132,11 +137,11 @@
       const plain = make(axis, { in_card: false, in_card_spacing: "compact" });
       for (let i = 0; i < 5; i++) await frame();
       assert(
-        getComputedStyle(standard.root).gap === "8px",
-        prefix + "default fallback",
+        getComputedStyle(standard.root).gap === "0px",
+        prefix + "default zero gap",
       );
       assert(
-        gap(standard, axis).every((value) => value === 8),
+        gap(standard, axis).every((value) => value === 0),
         prefix + "hidden conditional has no extra gap",
       );
       assert(
@@ -145,34 +150,56 @@
       );
       standard.stack.style.setProperty("--stack-card-gap", "20px");
       assert(
-        getComputedStyle(standard.root).gap === "20px",
+        getComputedStyle(standard.root).gap === "0px",
+        prefix + "default ignores theme gap",
+      );
+      assert(
+        getComputedStyle(normal.root).gap === "0px" &&
+          gap(normal, axis).every((value) => value === 0),
+        prefix + "explicit normal matches default",
+      );
+      explicit.stack.style.setProperty("--stack-card-gap", "20px");
+      assert(
+        getComputedStyle(explicit.root).gap === "20px",
         prefix + "live theme change",
       );
-      standard.stack.style.setProperty("--" + axis + "-stack-card-gap", "11px");
+      explicit.stack.style.setProperty("--" + axis + "-stack-card-gap", "11px");
       assert(
-        getComputedStyle(standard.root).gap === "11px",
+        getComputedStyle(explicit.root).gap === "11px",
         prefix + "axis theme takes precedence",
       );
       assert(
-        gap(standard, axis).every((value) => value === 11),
+        gap(explicit, axis).every((value) => value === 11),
         prefix + "no overlap",
       );
       standard.wrappers[1].style.display = "";
       assert(
         gap(standard, axis).length === 2 &&
-          gap(standard, axis).every((value) => value === 11),
+          gap(standard, axis).every((value) => value === 0),
         prefix + "conditional revealed",
       );
       assert(
-        getComputedStyle(compact.root).gap === "0px" &&
-          gap(compact, axis).every((value) => value === 0),
-        prefix + "compact ignores theme gap without overlap",
+        getComputedStyle(compact.root).gap === "13px" &&
+          gap(compact, axis).every((value) => value === -11),
+        prefix + "compact restores legacy compression",
       );
       compact.wrappers[1].style.display = "";
       assert(
         gap(compact, axis).length === 2 &&
-          gap(compact, axis).every((value) => value === 0),
+          gap(compact, axis).every((value) => value === -11),
         prefix + "compact conditional revealed",
+      );
+      compact.stack.style.removeProperty("--stack-card-gap");
+      assert(
+        getComputedStyle(compact.root).gap === "8px" &&
+          gap(compact, axis).every((value) => value === -16),
+        prefix + "compact restores original fallback layout",
+      );
+      explicit.stack.style.removeProperty("--" + axis + "-stack-card-gap");
+      explicit.stack.style.removeProperty("--stack-card-gap");
+      assert(
+        getComputedStyle(explicit.root).gap === "8px",
+        prefix + "theme fallback",
       );
       assert(
         compact.wrappers[0].firstElementChild.style.background === "none",

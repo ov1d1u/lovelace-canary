@@ -31,9 +31,23 @@ export const HORIZONTAL_STACK_IN_CARD_STYLE = `
 `;
 
 // language=CSS
-export const COMPACT_STACK_IN_CARD_STYLE = `
+export const NORMAL_STACK_IN_CARD_STYLE = `
     :host #root {
       gap: 0;
+    }
+`;
+
+// language=CSS
+export const VERTICAL_STACK_COMPACT_STYLE = `
+    :host #root > *:not(:first-child) {
+      margin-top: -24px;
+    }
+`;
+
+// language=CSS
+export const HORIZONTAL_STACK_COMPACT_STYLE = `
+    :host #root > *:not(:first-child) {
+      margin-inline-start: -24px;
     }
 `;
 

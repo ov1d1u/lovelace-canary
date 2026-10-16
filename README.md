@@ -41,18 +41,19 @@ For more information head over to the [wiki](https://github.com/jcwillox/lovelac
 ### Stack spacing
 
 On vertical and horizontal stacks, `in_card: true` combines the cards into one
-surface while keeping the theme's normal spacing between them. `in_card_spacing`
+surface with no gap or overlap by default. `in_card_spacing`
 only applies when `in_card` is enabled:
 
-| Value             | Behavior                                                                                                           |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `theme` (default) | Uses `--vertical-stack-card-gap` or `--horizontal-stack-card-gap`, falling back to `--stack-card-gap`, then `8px`. |
-| `compact`         | Removes the gap between cards without overlapping them.                                                            |
+| Value              | Behavior                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `normal` (default) | Removes the gap between cards without overlapping them.                                                            |
+| `theme`            | Uses `--vertical-stack-card-gap` or `--horizontal-stack-card-gap`, falling back to `--stack-card-gap`, then `8px`. |
+| `compact`          | Restores the original fixed `-24px` margins between cards, in addition to the theme gap. Cards can overlap.        |
 
 ```yaml
 type: vertical-stack
 in_card: true
-in_card_spacing: compact
+in_card_spacing: normal
 cards:
   - type: custom:mushroom-entity-card
     entity: light.living_lamp
@@ -60,12 +61,13 @@ cards:
     entity: switch.living_lights
 ```
 
-Omit `in_card_spacing` or set it to `theme` to follow the active theme. Theme changes
-update the gap automatically, and hidden conditional cards consume no gap.
+Omit `in_card_spacing` or set it to `normal` for zero-gap spacing. Choose `theme`
+to follow the active theme, or `compact` for Canary's original compressed layout.
+Hidden conditional cards consume no space.
 
-Previously, `in_card` applied fixed negative margins between cards. Existing stacks
-will now use theme spacing by default. Choose `compact` for a tighter layout; it
-does not restore the old overlap.
+In v0.7.0 and v0.7.1, zero-gap spacing was called `compact` and the default was
+`theme`. To preserve their zero-gap layout, change `in_card_spacing: compact` to
+`normal` or remove the option. Set `theme` explicitly to preserve their default.
 
 ## Credits
 
