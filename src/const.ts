@@ -10,15 +10,22 @@ export const DEFAULT_SECONDARY_INFO = [
 
 // language=CSS
 export const VERTICAL_STACK_IN_CARD_STYLE = `
-    #root > *:not(:first-child) {
-      margin-top: -24px;
+    #root {
+      gap: var(--vertical-stack-card-gap, var(--stack-card-gap, 8px));
     }
 `;
 
 // language=CSS
 export const HORIZONTAL_STACK_IN_CARD_STYLE = `
-    #root > *:not(:first-child) {
-      margin-inline-start: -24px;
+    #root {
+      gap: var(--horizontal-stack-card-gap, var(--stack-card-gap, 8px));
+    }
+`;
+
+// language=CSS
+export const COMPACT_STACK_IN_CARD_STYLE = `
+    #root {
+      gap: 0;
     }
 `;
 

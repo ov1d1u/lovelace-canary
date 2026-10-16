@@ -28,13 +28,44 @@ Much like [card-mod] Canary extends the default lovelace cards, so you don't nee
   - [`align`](https://github.com/jcwillox/lovelace-canary/wiki/Glance-Card#align)
 - Horizontal Stack
   - `in_card`
+  - `in_card_spacing`
 - [Vertical Stack](https://github.com/jcwillox/lovelace-canary/wiki/Vertical-Stack)
   - [`in_card`](https://github.com/jcwillox/lovelace-canary/wiki/Vertical-Stack#in_card)
+  - `in_card_spacing`
 - [Canary Card](https://github.com/jcwillox/lovelace-canary/wiki/Canary-Card)
   - `style`
   - `theme`
 
 For more information head over to the [wiki](https://github.com/jcwillox/lovelace-canary/wiki).
+
+### Stack spacing
+
+On vertical and horizontal stacks, `in_card: true` combines the cards into one
+surface while keeping the theme's normal spacing between them. `in_card_spacing`
+only applies when `in_card` is enabled:
+
+| Value             | Behavior                                                                                                           |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `theme` (default) | Uses `--vertical-stack-card-gap` or `--horizontal-stack-card-gap`, falling back to `--stack-card-gap`, then `8px`. |
+| `compact`         | Removes the gap between cards without overlapping them.                                                            |
+
+```yaml
+type: vertical-stack
+in_card: true
+in_card_spacing: compact
+cards:
+  - type: custom:mushroom-entity-card
+    entity: light.living_lamp
+  - type: custom:mushroom-entity-card
+    entity: switch.living_lights
+```
+
+Omit `in_card_spacing` or set it to `theme` to follow the active theme. Theme changes
+update the gap automatically, and hidden conditional cards consume no gap.
+
+Previously, `in_card` applied fixed negative margins between cards. Existing stacks
+will now use theme spacing by default. Choose `compact` for a tighter layout; it
+does not restore the old overlap.
 
 ## Credits
 
