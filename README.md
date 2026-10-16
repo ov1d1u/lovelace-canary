@@ -79,5 +79,12 @@ resources:
     type: module
 ```
 
+## Browser regression checks
+
+Run `pnpm build`, then `pnpm exec vite`, and open `/tests/stack-spacing.html` on
+the local server. The page checks the production bundle against adopted
+stylesheets, legacy Canary margins, theme changes, compact spacing, conditional
+rows, and disabled extensions in both stack directions.
+
 [card-mod]: https://github.com/thomasloven/lovelace-card-mod
 [card-tools]: https://github.com/thomasloven/lovelace-card-tools

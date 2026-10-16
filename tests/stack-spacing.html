@@ -1,0 +1,198 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Canary spacing regression checks</title>
+<style>
+  body {
+    font: 16px system-ui;
+    padding: 24px;
+    background: #f4f5f7;
+    color: #19202b;
+  }
+  section {
+    display: inline-block;
+    vertical-align: top;
+    width: 320px;
+    margin: 12px;
+  }
+  h2 {
+    font-size: 16px;
+  }
+</style>
+<h1>Canary spacing regression checks</h1>
+<pre id="result">Running…</pre>
+<main id="examples"></main>
+<script type="module">
+  class HaCard extends HTMLElement {
+    static styles = {
+      cssText:
+        ":host { display: block; background: var(--ha-card-background, white); border: 1px solid #ccc; border-radius: 12px; box-shadow: 0 1px 4px #aaa; }",
+    };
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML =
+        `<style>${HaCard.styles.cssText}</style><slot></slot>`;
+      this.updateComplete = Promise.resolve();
+    }
+    firstUpdated() {}
+  }
+  customElements.define("ha-card", HaCard);
+  customElements.define("home-assistant", class extends HTMLElement {});
+  class Stack extends HTMLElement {
+    constructor() {
+      super();
+      const vertical = this.localName.includes("vertical");
+      const axis = vertical ? "vertical" : "horizontal";
+      this.attachShadow({ mode: "open" }).innerHTML = '<div id="root"></div>';
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(`
+        :host { display: block; }
+        #root { display: flex; flex-direction: ${vertical ? "column" : "row"}; gap: var(--${axis}-stack-card-gap, var(--stack-card-gap, 8px)); }
+        #root > * { flex: 1; min-width: 0; }
+      `);
+      this.shadowRoot.adoptedStyleSheets = [sheet];
+    }
+    firstUpdated() {}
+  }
+  customElements.define("hui-vertical-stack-card", class extends Stack {});
+  customElements.define("hui-horizontal-stack-card", class extends Stack {});
+  await import("../dist/canary.js");
+  await Promise.resolve();
+  const results = [];
+  const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+  const assert = (condition, label) => {
+    if (!condition) throw Error(label);
+    results.push("PASS " + label);
+  };
+  function make(axis, config, theme = {}) {
+    const section = document.createElement("section");
+    const title = document.createElement("h2");
+    title.textContent = axis + ": " + (config.in_card_spacing || "default");
+    section.append(title);
+    const stack = document.createElement("hui-" + axis + "-stack-card");
+    stack._config = config;
+    for (const [key, value] of Object.entries(theme))
+      stack.style.setProperty(key, value);
+    const root = stack.shadowRoot.querySelector("#root");
+    // Simulate an older Canary copy loaded via frontend.extra_module_url.
+    if (config.in_card && !config.disable_canary) {
+      const legacyStyle = document.createElement("style");
+      legacyStyle.textContent = `#root > *:not(:first-child) { ${axis === "vertical" ? "margin-top" : "margin-inline-start"}: -24px; }`;
+      stack.shadowRoot.append(legacyStyle);
+    }
+    for (let i = 0; i < 3; i++) {
+      const wrapper = document.createElement("hui-card");
+      if (i === 1) wrapper.style.display = "none";
+      const card = document.createElement("ha-card");
+      card.style.height = "54px";
+      card.style.padding = "10px";
+      card.textContent = ["Soundbar", "Conditional row", "Stand PSVR2"][i];
+      wrapper.append(card);
+      root.append(wrapper);
+    }
+    section.append(stack);
+    document.querySelector("#examples").append(section);
+    stack.firstUpdated(new Map());
+    return { stack, root, wrappers: Array.from(root.children) };
+  }
+  function gap(example, axis) {
+    const boxes = example.wrappers
+      .filter((el) => getComputedStyle(el).display !== "none")
+      .map((el) => el.getBoundingClientRect());
+    return boxes
+      .slice(1)
+      .map((box, i) =>
+        axis === "vertical"
+          ? box.top - boxes[i].bottom
+          : box.left - boxes[i].right,
+      );
+  }
+  try {
+    for (const axis of ["vertical", "horizontal"]) {
+      const prefix = axis + ": ";
+      const standard = make(axis, { in_card: true });
+      const compact = make(
+        axis,
+        { in_card: true, in_card_spacing: "compact" },
+        { "--stack-card-gap": "24px" },
+      );
+      const explicit = make(
+        axis,
+        { in_card: true, in_card_spacing: "theme" },
+        { "--stack-card-gap": "13px" },
+      );
+      const disabled = make(
+        axis,
+        {
+          in_card: true,
+          in_card_spacing: "compact",
+          disable_canary: ["in_card"],
+        },
+        { "--stack-card-gap": "17px" },
+      );
+      const plain = make(axis, { in_card: false, in_card_spacing: "compact" });
+      for (let i = 0; i < 5; i++) await frame();
+      assert(
+        getComputedStyle(standard.root).gap === "8px",
+        prefix + "default fallback",
+      );
+      assert(
+        gap(standard, axis).every((value) => value === 8),
+        prefix + "hidden conditional has no extra gap",
+      );
+      assert(
+        getComputedStyle(explicit.root).gap === "13px",
+        prefix + "shared theme gap",
+      );
+      standard.stack.style.setProperty("--stack-card-gap", "20px");
+      assert(
+        getComputedStyle(standard.root).gap === "20px",
+        prefix + "live theme change",
+      );
+      standard.stack.style.setProperty("--" + axis + "-stack-card-gap", "11px");
+      assert(
+        getComputedStyle(standard.root).gap === "11px",
+        prefix + "axis theme takes precedence",
+      );
+      assert(
+        gap(standard, axis).every((value) => value === 11),
+        prefix + "no overlap",
+      );
+      standard.wrappers[1].style.display = "";
+      assert(
+        gap(standard, axis).length === 2 &&
+          gap(standard, axis).every((value) => value === 11),
+        prefix + "conditional revealed",
+      );
+      assert(
+        getComputedStyle(compact.root).gap === "0px" &&
+          gap(compact, axis).every((value) => value === 0),
+        prefix + "compact ignores theme gap without overlap",
+      );
+      compact.wrappers[1].style.display = "";
+      assert(
+        gap(compact, axis).length === 2 &&
+          gap(compact, axis).every((value) => value === 0),
+        prefix + "compact conditional revealed",
+      );
+      assert(
+        compact.wrappers[0].firstElementChild.style.background === "none",
+        prefix + "shared appearance retained",
+      );
+      assert(
+        getComputedStyle(disabled.root).gap === "17px" &&
+          disabled.wrappers[0].firstElementChild.style.background === "",
+        prefix + "disabled extension untouched",
+      );
+      assert(
+        getComputedStyle(plain.root).gap === "8px" &&
+          plain.wrappers[0].firstElementChild.style.background === "",
+        prefix + "plain stack untouched",
+      );
+    }
+    document.querySelector("#result").textContent =
+      results.length + " checks passed\n" + results.join("\n");
+  } catch (error) {
+    document.querySelector("#result").textContent =
+      results.join("\n") + "\nFAIL " + error.stack;
+  }
+</script>

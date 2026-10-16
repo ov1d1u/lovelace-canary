@@ -8,23 +8,31 @@ export const DEFAULT_SECONDARY_INFO = [
   "brightness",
 ];
 
+// :host outranks core #root rules in Lit's adopted stylesheets.
+// Reset legacy margins when an older Canary copy has also injected styles.
 // language=CSS
 export const VERTICAL_STACK_IN_CARD_STYLE = `
-    #root {
+    :host #root {
       gap: var(--vertical-stack-card-gap, var(--stack-card-gap, 8px));
+    }
+    :host #root > *:not(:first-child) {
+      margin-top: 0;
     }
 `;
 
 // language=CSS
 export const HORIZONTAL_STACK_IN_CARD_STYLE = `
-    #root {
+    :host #root {
       gap: var(--horizontal-stack-card-gap, var(--stack-card-gap, 8px));
+    }
+    :host #root > *:not(:first-child) {
+      margin-inline-start: 0;
     }
 `;
 
 // language=CSS
 export const COMPACT_STACK_IN_CARD_STYLE = `
-    #root {
+    :host #root {
       gap: 0;
     }
 `;
