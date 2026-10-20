@@ -88,5 +88,8 @@ the local server. The page checks the production bundle against adopted
 stylesheets, legacy Canary margins, theme changes, compact spacing, conditional
 rows, and disabled extensions in both stack directions.
 
+Open `/tests/stack-load-order.html` to check stacks that render before `ha-card`
+loads, including nested stacks and disabled extensions in both directions.
+
 [card-mod]: https://github.com/thomasloven/lovelace-card-mod
 [card-tools]: https://github.com/thomasloven/lovelace-card-tools

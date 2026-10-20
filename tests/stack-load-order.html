@@ -1,0 +1,89 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Canary stack load-order regression checks</title>
+<pre id="result">Running…</pre>
+<script type="module">
+  const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+  const results = [];
+  const assert = (condition, label) => {
+    if (!condition) throw Error(label);
+    results.push("PASS " + label);
+  };
+  class Stack extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML = '<div id="root"></div>';
+      this.updateComplete = Promise.resolve();
+    }
+    firstUpdated() {
+      this.originalFirstUpdatedCalled = true;
+    }
+  }
+  customElements.define("hui-vertical-stack-card", class extends Stack {});
+  customElements.define("hui-horizontal-stack-card", class extends Stack {});
+  customElements.define("home-assistant", class extends HTMLElement {});
+  // The stacks are available before their asynchronously loaded child cards.
+  await import("../dist/canary.js");
+  await Promise.resolve();
+  const examples = [];
+  for (const axis of ["vertical", "horizontal"]) {
+    for (const config of [
+      { in_card: true },
+      { in_card: false },
+      { in_card: true, disable_canary: ["in_card"] },
+    ]) {
+      const stack = document.createElement("hui-" + axis + "-stack-card");
+      stack._config = config;
+      const nested = document.createElement(
+        "hui-" +
+          (axis === "vertical" ? "horizontal" : "vertical") +
+          "-stack-card",
+      );
+      nested._config = {};
+      const card = document.createElement("ha-card");
+      nested.shadowRoot.querySelector("#root").append(card);
+      stack.shadowRoot.querySelector("#root").append(nested);
+      document.body.append(stack);
+      nested.firstUpdated(new Map());
+      stack.firstUpdated(new Map());
+      examples.push({ axis, config, stack, card });
+    }
+  }
+  // Ensure every stack's first render has finished before ha-card is defined.
+  await frame();
+  class HaCard extends HTMLElement {
+    static styles = {
+      cssText:
+        ":host { display: block; background: var(--ha-card-background, rgb(32, 32, 32)); border: 1px solid gray; border-radius: 12px; }",
+    };
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" }).innerHTML =
+        `<style>${HaCard.styles.cssText}</style><slot></slot>`;
+      this.updateComplete = Promise.resolve();
+    }
+    firstUpdated() {}
+  }
+  customElements.define("ha-card", HaCard);
+  for (let i = 0; i < 5; i++) await frame();
+  try {
+    for (const { axis, config, stack, card } of examples) {
+      assert(stack.originalFirstUpdatedCalled, axis + ": original hook called");
+      const enabled = config.in_card && !config.disable_canary;
+      assert(
+        getComputedStyle(stack).backgroundColor ===
+          (enabled ? "rgb(32, 32, 32)" : "rgba(0, 0, 0, 0)"),
+        axis + ": " + JSON.stringify(config) + " outer background",
+      );
+      assert(
+        card.style.background === (enabled ? "none" : ""),
+        axis + ": " + JSON.stringify(config) + " nested child background",
+      );
+    }
+    document.querySelector("#result").textContent =
+      results.length + " checks passed\n" + results.join("\n");
+  } catch (error) {
+    document.querySelector("#result").textContent =
+      results.join("\n") + "\nFAIL " + error.stack;
+  }
+</script>

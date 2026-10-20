@@ -50,32 +50,36 @@ export function registerStackInCard(
 ) {
   if (!moduleEnabled(module)) return;
 
-  // require ha-card to be defined so that we can take its style
-  customElements.whenDefined("ha-card").then(() => {
+  // Install the hook before ha-card loads: a stack can render before its cards.
+  createModule<Config>(element, async function () {
+    if (
+      this._config?.in_card !== true ||
+      !extensionEnabled(this._config, "in_card")
+    ) {
+      return;
+    }
+
+    // Only reading ha-card's styles needs to wait for its definition.
+    await customElements.whenDefined("ha-card");
+    await this.updateComplete;
+
     const inCardStyle =
       stackStyle +
       ((customElements.get("ha-card") as CardWithStyles).styles?.cssText ?? "");
 
-    createModule<Config>(element, function () {
-      if (
-        this._config?.in_card === true &&
-        extensionEnabled(this._config, "in_card")
-      ) {
-        // add ha-card appearance with normal, theme, or legacy compact spacing.
-        const styleElement = document.createElement("style");
-        styleElement.textContent =
-          inCardStyle +
-          (this._config.in_card_spacing === "compact"
-            ? compactStyle
-            : this._config.in_card_spacing === "theme"
-              ? ""
-              : NORMAL_STACK_IN_CARD_STYLE);
-        this.shadowRoot?.appendChild(styleElement);
+    // add ha-card appearance with normal, theme, or legacy compact spacing.
+    const styleElement = document.createElement("style");
+    styleElement.textContent =
+      inCardStyle +
+      (this._config.in_card_spacing === "compact"
+        ? compactStyle
+        : this._config.in_card_spacing === "theme"
+          ? ""
+          : NORMAL_STACK_IN_CARD_STYLE);
+    this.shadowRoot?.appendChild(styleElement);
 
-        // remove style from all ha-card child elements.
-        const divElement = this.shadowRoot?.querySelector("#root");
-        applyStyles(divElement);
-      }
-    });
+    // remove style from all ha-card child elements.
+    const divElement = this.shadowRoot?.querySelector("#root");
+    await applyStyles(divElement);
   });
 }
