@@ -5,8 +5,9 @@
 <script type="module">
   const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
   const results = [];
-  const assert = (condition, label) => {
-    if (!condition) throw Error(label);
+  const assert = (condition, label, detail) => {
+    if (!condition)
+      throw Error(label + (detail ? " (got " + detail + ")" : ""));
     results.push("PASS " + label);
   };
   class Stack extends HTMLElement {
@@ -25,6 +26,8 @@
   // The stacks are available before their asynchronously loaded child cards.
   await import("../dist/canary.js");
   await Promise.resolve();
+  // Dark themes use white text, which is a border's default color.
+  document.body.style.color = "white";
   const examples = [];
   const borderlessBeforePaint = new Map();
   for (const axis of ["vertical", "horizontal"]) {
@@ -62,7 +65,7 @@
   class HaCard extends HTMLElement {
     static styles = {
       cssText:
-        ":host { display: block; background: var(--ha-card-background, rgb(32, 32, 32)); box-shadow: var(--ha-card-box-shadow, none); border-width: var(--ha-card-border-width, 1px); border-style: solid; border-color: gray; border-radius: 12px; }",
+        ":host { display: block; background: var(--ha-card-background, rgb(32, 32, 32)); box-shadow: var(--ha-card-box-shadow, none); border-width: var(--ha-card-border-width, 1px); border-style: solid; border-color: gray; border-radius: 12px; transition: all 0.3s ease-out; }",
     };
     constructor() {
       super();
@@ -74,15 +77,36 @@
   }
   customElements.define("ha-card", HaCard);
   for (let i = 0; i < 5; i++) await frame();
+  // Read the outer stacks now, well inside ha-card's 0.3s transition.
+  const outer = new Map(
+    examples
+      .map(({ stack }) => [stack, getComputedStyle(stack)])
+      .map(([stack, style]) => [
+        stack,
+        { background: style.backgroundColor, border: style.borderTopColor },
+      ]),
+  );
+  // Nested cards created before ha-card was defined fade out their default
+  // border once it upgrades. Home Assistant defines ha-card before creating
+  // them, so only check their final look.
+  await new Promise((resolve) => setTimeout(resolve, 400));
   try {
     for (const { axis, config, stack, card } of examples) {
       assert(stack.originalFirstUpdatedCalled, axis + ": original hook called");
       const enabled = config.in_card && !config.disable_canary;
       assert(
-        getComputedStyle(stack).backgroundColor ===
+        outer.get(stack).background ===
           (enabled ? "rgb(32, 32, 32)" : "rgba(0, 0, 0, 0)"),
         axis + ": " + JSON.stringify(config) + " outer background",
+        outer.get(stack).background,
       );
+      // The copied ha-card styles must not fade in from the text color.
+      if (enabled)
+        assert(
+          outer.get(stack).border === "rgb(128, 128, 128)",
+          axis + ": " + JSON.stringify(config) + " outer border not animated",
+          outer.get(stack).border,
+        );
       assert(
         getComputedStyle(card).backgroundColor ===
           (enabled ? "rgba(0, 0, 0, 0)" : "rgb(32, 32, 32)"),
@@ -91,6 +115,7 @@
       assert(
         getComputedStyle(card).borderTopWidth === (enabled ? "0px" : "1px"),
         axis + ": " + JSON.stringify(config) + " nested child border",
+        getComputedStyle(card).borderTopWidth,
       );
       assert(
         borderlessBeforePaint.get(stack) === enabled,
