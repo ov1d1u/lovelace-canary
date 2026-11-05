@@ -54,6 +54,14 @@ export function registerStackInCard(
         : this._config.in_card_spacing === "theme"
           ? ""
           : NORMAL_STACK_IN_CARD_STYLE);
+
+    // ha-card's styles include a 0.3s transition. Without this, the stack's
+    // border would fade in from the text color, which is white in dark themes.
+    const transition = this.style.transition;
+    this.style.transition = "none";
     this.shadowRoot?.appendChild(styleElement);
+    // Apply the new styles now, while transitions are off.
+    getComputedStyle(this).borderTopColor;
+    this.style.transition = transition;
   });
 }
