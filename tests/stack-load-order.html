@@ -26,6 +26,7 @@
   await import("../dist/canary.js");
   await Promise.resolve();
   const examples = [];
+  const borderlessBeforePaint = new Map();
   for (const axis of ["vertical", "horizontal"]) {
     for (const config of [
       { in_card: true },
@@ -46,6 +47,13 @@
       document.body.append(stack);
       nested.firstUpdated(new Map());
       stack.firstUpdated(new Map());
+      // Read the reset synchronously, as the browser would on its next paint.
+      borderlessBeforePaint.set(
+        stack,
+        getComputedStyle(stack.shadowRoot.querySelector("#root"))
+          .getPropertyValue("--ha-card-border-width")
+          .trim() === "0",
+      );
       examples.push({ axis, config, stack, card });
     }
   }
@@ -54,7 +62,7 @@
   class HaCard extends HTMLElement {
     static styles = {
       cssText:
-        ":host { display: block; background: var(--ha-card-background, rgb(32, 32, 32)); border: 1px solid gray; border-radius: 12px; }",
+        ":host { display: block; background: var(--ha-card-background, rgb(32, 32, 32)); box-shadow: var(--ha-card-box-shadow, none); border-width: var(--ha-card-border-width, 1px); border-style: solid; border-color: gray; border-radius: 12px; }",
     };
     constructor() {
       super();
@@ -76,8 +84,17 @@
         axis + ": " + JSON.stringify(config) + " outer background",
       );
       assert(
-        card.style.background === (enabled ? "none" : ""),
+        getComputedStyle(card).backgroundColor ===
+          (enabled ? "rgba(0, 0, 0, 0)" : "rgb(32, 32, 32)"),
         axis + ": " + JSON.stringify(config) + " nested child background",
+      );
+      assert(
+        getComputedStyle(card).borderTopWidth === (enabled ? "0px" : "1px"),
+        axis + ": " + JSON.stringify(config) + " nested child border",
+      );
+      assert(
+        borderlessBeforePaint.get(stack) === enabled,
+        axis + ": " + JSON.stringify(config) + " borderless before paint",
       );
     }
     document.querySelector("#result").textContent =
