@@ -25,7 +25,7 @@
   class HaCard extends HTMLElement {
     static styles = {
       cssText:
-        ":host { display: block; background: var(--ha-card-background, white); border: 1px solid #ccc; border-radius: 12px; box-shadow: 0 1px 4px #aaa; }",
+        ":host { display: block; background: var(--ha-card-background, white); border-width: var(--ha-card-border-width, 1px); border-style: solid; border-color: #ccc; border-radius: 12px; box-shadow: var(--ha-card-box-shadow, 0 1px 4px #aaa); }",
     };
     constructor() {
       super();
@@ -202,17 +202,20 @@
         prefix + "theme fallback",
       );
       assert(
-        compact.wrappers[0].firstElementChild.style.background === "none",
+        getComputedStyle(compact.wrappers[0].firstElementChild)
+          .backgroundColor === "rgba(0, 0, 0, 0)",
         prefix + "shared appearance retained",
       );
       assert(
         getComputedStyle(disabled.root).gap === "17px" &&
-          disabled.wrappers[0].firstElementChild.style.background === "",
+          getComputedStyle(disabled.wrappers[0].firstElementChild)
+            .backgroundColor === "rgb(255, 255, 255)",
         prefix + "disabled extension untouched",
       );
       assert(
         getComputedStyle(plain.root).gap === "8px" &&
-          plain.wrappers[0].firstElementChild.style.background === "",
+          getComputedStyle(plain.wrappers[0].firstElementChild)
+            .backgroundColor === "rgb(255, 255, 255)",
         prefix + "plain stack untouched",
       );
     }

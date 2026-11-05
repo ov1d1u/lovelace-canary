@@ -1,5 +1,5 @@
 import { LovelaceCard } from "custom-card-helpers";
-import { NORMAL_STACK_IN_CARD_STYLE, NO_CARD_STYLE } from "../const";
+import { NESTED_CARD_RESET_STYLE, NORMAL_STACK_IN_CARD_STYLE } from "../const";
 import { createModule } from "../module";
 import { extensionEnabled, moduleEnabled } from "../utils";
 
@@ -13,34 +13,6 @@ interface Config {
   in_card?: boolean;
   in_card_spacing?: "normal" | "theme" | "compact";
 }
-
-const applyStyles = async function (element) {
-  // exit clause.
-  if (!element) return;
-
-  await element.updateComplete;
-
-  if (element.tagName === "HA-CARD") {
-    element.style.transition = "none";
-    Object.assign(element.style, NO_CARD_STYLE);
-    // flush css
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    element.offsetHeight;
-    element.style.transition = "";
-  }
-
-  // depth search.
-  if (element.firstElementChild) {
-    await applyStyles(element.firstElementChild);
-  }
-  if (element.shadowRoot) {
-    await applyStyles(element.shadowRoot.firstElementChild);
-  }
-  // breadth search.
-  if (element.nextElementSibling) {
-    await applyStyles(element.nextElementSibling);
-  }
-};
 
 export function registerStackInCard(
   module: string,
@@ -58,6 +30,12 @@ export function registerStackInCard(
     ) {
       return;
     }
+
+    // Make nested cards borderless right away, before anything is awaited,
+    // so they never paint with their own border or background.
+    const resetElement = document.createElement("style");
+    resetElement.textContent = NESTED_CARD_RESET_STYLE;
+    this.shadowRoot?.appendChild(resetElement);
 
     // Only reading ha-card's styles needs to wait for its definition.
     await customElements.whenDefined("ha-card");
@@ -77,9 +55,5 @@ export function registerStackInCard(
           ? ""
           : NORMAL_STACK_IN_CARD_STYLE);
     this.shadowRoot?.appendChild(styleElement);
-
-    // remove style from all ha-card child elements.
-    const divElement = this.shadowRoot?.querySelector("#root");
-    await applyStyles(divElement);
   });
 }

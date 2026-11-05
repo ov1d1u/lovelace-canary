@@ -56,3 +56,17 @@ export const NO_CARD_STYLE = {
   background: "none",
   border: "none",
 };
+
+// ha-card reads its look from these variables, and they inherit through
+// shadow roots. Setting them on #root makes every nested card borderless
+// from its first frame, even cards that load late. The stack's own
+// ha-card look lives on :host, so it keeps the theme values.
+// language=CSS
+export const NESTED_CARD_RESET_STYLE = `
+    :host #root {
+      --ha-card-background: none;
+      --ha-card-box-shadow: none;
+      --ha-card-border-width: 0;
+      --ha-card-backdrop-filter: none;
+    }
+`;
